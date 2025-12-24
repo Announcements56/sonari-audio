@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Amrita's Winter Mystery ❄️</title>
+    <link href="https://fonts.googleapis.com/css2?family=Pacifico&family=Quicksand:wght@400;600;700&family=Playfair+Display:italic,wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --pink-light: #fff5f7;
+            --pink-main: #ffb6c1;
+            --pink-accent: #ff85a1;
+            --winter-blue: #e0f7fa;
+            --snow-white: #ffffff;
+            --magic-gold: #ffd700;
+        }
+
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+        body, html {
+            margin: 0; padding: 0; width: 100%; height: 100%;
+            font-family: 'Quicksand', sans-serif;
+            background: linear-gradient(135deg, #fff5f7 0%, #ffebf0 50%, #e0f7fa 100%);
+            overflow: hidden; color: #5d5d5d;
+        }
+
+        /* --- Snowfall Layer --- */
+        #snow-container {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; z-index: 1;
+        }
+        .snowflake {
+            position: absolute; top: -10px; color: white;
+            opacity: 0.8; user-select: none; animation: fall linear forwards;
+            filter: drop-shadow(0 0 5px white);
+        }
+        @keyframes fall { to { transform: translateY(105vh) rotate(360deg); } }
+
+        /* --- App Wrapper --- */
+        .app-wrapper {
+            position: relative; z-index: 10;
+            display: flex; justify-content: center; align-items: center;
+            height: 100vh; width: 100%; padding: 20px;
+        }
+
+        .screen {
+            background: rgba(255, 255, 255, 0.4);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 2px solid var(--snow-white);
+            border-radius: 40px; padding: 2.5rem;
+            text-align: center; width: 100%; max-width: 600px;
+            display: none; box-shadow: 0 20px 60px rgba(255, 182, 193, 0.2);
+            max-height: 90vh; overflow-y: auto;
+        }
+        .active { display: block; animation: screenPop 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+        @keyframes screenPop { from { opacity: 0; transform: scale(0.9) translateY(30px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+
+        /* --- Elements --- */
+        h1 { font-family: 'Pacifico', cursive; color: var(--pink-accent); font-size: 2.5rem; margin-top: 0; text-shadow: 2px 2px 0 white; }
+        p { font-size: 1.1rem; line-height: 1.6; color: #6a6a6a; }
+
+        .btn {
+            background: var(--pink-accent); color: white; border: none;
+            padding: 15px 45px; border-radius: 50px; font-size: 1.3rem;
+            font-family: 'Pacifico', cursive; cursor: pointer; transition: 0.4s;
+            box-shadow: 0 10px 20px rgba(255, 133, 161, 0.3);
+            margin-top: 20px; position: relative; overflow: hidden;
+        }
+        .btn:hover { transform: translateY(-3px); background: #ff6b8e; box-shadow: 0 15px 30px rgba(255, 133, 161, 0.4); }
+
+        /* --- Game Grid --- */
+        .hud { display: flex; justify-content: space-between; margin-bottom: 20px; font-weight: 700; color: var(--pink-accent); }
+        .grid {
+            display: grid; grid-template-columns: repeat(4, 1fr);
+            gap: 12px; margin: 20px 0;
+        }
+        @media (max-width: 480px) { .grid { grid-template-columns: repeat(3, 1fr); } }
+
+        .card { height: 100px; perspective: 1000px; cursor: pointer; animation: cardFloat 3s infinite alternate ease-in-out; }
+        @keyframes cardFloat { from { transform: translateY(0); } to { transform: translateY(-8px); } }
+
+        .card-inner {
+            position: relative; width: 100%; height: 100%;
+            transition: transform 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+            transform-style: preserve-3d;
+        }
+        .card.flipped .card-inner { transform: rotateY(180deg); }
+        .card-face {
+            position: absolute; width: 100%; height: 100%;
+            backface-visibility: hidden; display: flex;
+            align-items: center; justify-content: center;
+            border-radius: 18px; font-size: 1.8rem; border: 3px solid white;
+        }
+        .card-front { background: var(--pink-main); color: white; box-shadow: inset 0 0 15px rgba(255,255,255,0.5); }
+        .card-back { background: var(--winter-blue); transform: rotateY(180deg); color: var(--pink-accent); }
+
+        /* --- Message Choices --- */
+        .choice-card {
+            background: white; border: 2px solid var(--pink-main);
+            padding: 20px; border-radius: 25px; cursor: pointer;
+            transition: 0.4s; margin-bottom: 15px; text-align: left;
+        }
+        .choice-card:hover { transform: scale(1.02); background: var(--pink-light); border-color: var(--pink-accent); }
+        .choice-card h3 { margin: 0; font-family: 'Playfair Display', serif; color: var(--pink-accent); }
+        .choice-card p { margin: 5px 0 0; font-size: 0.9rem; }
+
+        /* --- Reveal Text --- */
+        .message-box { text-align: left; line-height: 1.9; font-size: 1.2rem; font-family: 'Playfair Display', serif; }
+        .stanza { opacity: 0; transform: translateY(20px); transition: 1.5s ease; margin-bottom: 25px; }
+        .stanza.visible { opacity: 1; transform: translateY(0); }
+        .highlight { color: var(--pink-accent); font-weight: 700; font-style: italic; }
+
+        /* --- Effects --- */
+        .confetti {
+            position: fixed; width: 10px; height: 10px; z-index: 1000;
+            animation: confettiFall 3s ease-out forwards; pointer-events: none;
+        }
+        @keyframes confettiFall {
+            0% { transform: translateY(0) rotate(0); opacity: 1; }
+            100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+        }
+    </style>
+</head>
+<body>
+
+<div id="snow-container"></div>
+
+<div class="app-wrapper">
+    <!-- Screen 1: Welcome -->
+    <div id="screen-welcome" class="screen">
+        <h1>Hi Amrita! 🌸</h1>
+        <p>A magical Secret Santa path has been prepared for you. Somewhere among the frost lies a path to your gift.</p>
+        <p style="font-family: 'Playfair Display', serif; font-style: italic;">"In the silence of the frost, trust your heart."</p>
+        <button class="btn" onclick="soundEngine.init(); app.start()">Enter the Magic ✨</button>
+    </div>
+
+    <!-- Screen 2: Game -->
+    <div id="screen-game" class="screen">
+        <div class="hud">
+            <span>Amrita's Journey</span>
+            <span>Chances: <span id="chance-val">10</span>/10</span>
+        </div>
+        <div id="feedback" style="height: 25px; color: var(--pink-accent); font-style: italic; margin-bottom: 10px;">Pick a card...</div>
+        <div class="grid" id="card-grid"></div>
+    </div>
+
+    <!-- Screen 3: Choices -->
+    <div id="screen-choices" class="screen">
+        <h1>The Path is Open ❄️</h1>
+        <p>You have found the light. Choose <b>one</b> mystical scroll to reveal your Secret Santa message:</p>
+        <div id="choice-list">
+            <div class="choice-card" onclick="app.selectMessage(1)"><h3>A Gentle Winter Poem</h3><p>Soft stanzas for a quiet, beautiful soul.</p></div>
+            <div class="choice-card" onclick="app.selectMessage(2)"><h3>What I See in You</h3><p>A sincere reflection of your inner radiance.</p></div>
+            <div class="choice-card" onclick="app.selectMessage(3)"><h3>About Your Creator</h3><p>A humble word from the friend behind the code.</p></div>
+            <div class="choice-card" onclick="app.selectMessage(4)"><h3>A Glimpse of 2026</h3><p>A starlit, mystical vision of your future year.</p></div>
+        </div>
+    </div>
+
+    <!-- Screen 4: Revelation -->
+    <div id="screen-reveal" class="screen">
+        <div id="reveal-content" class="message-box"></div>
+        <button class="btn" id="btn-restart" style="display:none" onclick="location.reload()">Share the Joy 🌸</button>
+    </div>
+
+    <!-- Screen 5: Locked -->
+    <div id="screen-locked" class="screen">
+        <h1>A Gift Already Found</h1>
+        <p>Amrita, your Secret Santa mystery has already been unraveled. This magic is so special it can only happen once.</p>
+        <button class="btn" onclick="app.showSaved()">View My Message ❄️</button>
+    </div>
+</div>
+
+<script>
+    /* --- Synthesized Audio Engine --- */
+    const soundEngine = {
+        ctx: null,
+        init() {
+            if (this.ctx) return;
+            this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+        },
+        playWhoosh() {
+            const osc = this.ctx.createOscillator();
+            const g = this.ctx.createGain();
+            osc.connect(g); g.connect(this.ctx.destination);
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(100, this.ctx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(800, this.ctx.currentTime + 0.2);
+            g.gain.setValueAtTime(0.1, this.ctx.currentTime);
+            g.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.2);
+            osc.start(); osc.stop(this.ctx.currentTime + 0.2);
+        },
+        playChime() {
+            const notes = [523.25, 659.25, 783.99, 1046.50]; // C-E-G-C
+            notes.forEach((freq, i) => {
+                const osc = this.ctx.createOscillator();
+                const g = this.ctx.createGain();
+                osc.connect(g); g.connect(this.ctx.destination);
+                osc.type = 'sine'; osc.frequency.value = freq;
+                g.gain.setValueAtTime(0, this.ctx.currentTime);
+                g.gain.linearRampToValueAtTime(0.1, this.ctx.currentTime + i * 0.1 + 0.05);
+                g.gain.linearRampToValueAtTime(0, this.ctx.currentTime + i * 0.1 + 0.3);
+                osc.start(this.ctx.currentTime + i * 0.1);
+                osc.stop(this.ctx.currentTime + i * 0.1 + 0.4);
+            });
+        }
+    };
+
+    /* --- Application Logic --- */
+    const app = {
+        chances: 10,
+        gameWon: localStorage.getItem('santa_won_amrita') === 'true',
+        choiceId: localStorage.getItem('santa_choice_amrita'),
+        
+        messages: {
+            1: [
+                "Among the whispering <span class='highlight'>snowflakes</span> and the silent stars,",
+                "A hidden path revealed itself to you.",
+                "In the frost of winter's night, remember:",
+                "You are a spark, a <span class='highlight'>gentle mystery</span>,",
+                "A light that dances where hearts seek warmth."
+            ],
+            2: [
+                "What I see in you, <span class='highlight'>Amrita</span>, is the quiet strength of the winter sun.",
+                "You don't roar, yet you melt the deepest ice just by being present.",
+                "There is a clarity in your laughter and a warmth in your spirit.",
+                "You carry an <span class='highlight'>elegance</span> that doesn't demand attention,",
+                "Yet captures every heart that values true depth."
+            ],
+            3: [
+                "From Joy: I built this little world because you deserve wonder.",
+                "I wanted to create a moment where you felt <span class='highlight'>truly seen</span>.",
+                "This isn't just a game; it's a reflection of the effort you deserve.",
+                "I'm just a humble coder who believes you are <span class='highlight'>worth the magic</span>.",
+                "Merry Christmas, Amrita. 🌸"
+            ],
+            4: [
+                "The stars of <span class='highlight'>2026</span> align in a playful dance for you.",
+                "I see a year where your quietest ambitions finally find their voice.",
+                "You will realize that the cold winds of the past only made you stronger.",
+                "A year of <span class='highlight'>blooming in the snow</span> awaits you.",
+                "Trust the journey, for the horizon is <span class='highlight'>glowing just for you</span>. 🔮"
+            ]
+        },
+
+        start() {
+            if (this.gameWon) this.navigate('choices');
+            else this.navigate('game'), this.renderGrid();
+        },
+
+        navigate(id) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById('screen-' + id).classList.add('active');
+        },
+
+        renderGrid() {
+            const grid = document.getElementById('card-grid');
+            grid.innerHTML = '';
+            for (let i = 0; i < 12; i++) {
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.style.animationDelay = (i * 0.05) + 's';
+                card.innerHTML = `<div class="card-inner"><div class="card-face card-front">❄️</div><div class="card-face card-back">❌</div></div>`;
+                card.onclick = () => this.handlePick(card);
+                grid.appendChild(card);
+            }
+        },
+
+        handlePick(card) {
+            if (card.classList.contains('flipped') || this.chances <= 0) return;
+            soundEngine.playWhoosh();
+            card.classList.add('flipped');
+
+            // Fate Logic: Win on 10th chance
+            if (this.chances === 1) {
+                const back = card.querySelector('.card-back');
+                back.innerHTML = '✨'; back.style.background = "white";
+                document.getElementById('feedback').innerText = "Fate has found you! ✨";
+                soundEngine.playChime();
+                this.spawnConfetti();
+                localStorage.setItem('santa_won_amrita', 'true');
+                setTimeout(() => this.navigate('choices'), 2500);
+            } else {
+                this.chances--;
+                document.getElementById('chance-val').innerText = this.chances;
+                const feeds = ["Not this one ❄️", "Try again 🎁", "Santa giggles ✨", "Almost! 🌬️"];
+                document.getElementById('feedback').innerText = feeds[Math.floor(Math.random()*feeds.length)];
+                if (this.chances === 1) document.getElementById('feedback').innerText = "Santa whispers: It's very close! 🎅";
+                
+                setTimeout(() => {
+                    this.renderGrid(); // Shuffle by re-render
+                }, 1000);
+            }
+        },
+
+        selectMessage(id) {
+            localStorage.setItem('santa_choice_amrita', id);
+            this.showRevelation(id);
+        },
+
+        showRevelation(id) {
+            this.navigate('reveal');
+            const container = document.getElementById('reveal-content');
+            container.innerHTML = `<h1>For Amrita</h1>`;
+            this.messages[id].forEach((line, i) => {
+                const div = document.createElement('div');
+                div.className = 'stanza';
+                div.innerHTML = line;
+                container.appendChild(div);
+                setTimeout(() => div.classList.add('visible'), i * 1500);
+            });
+            setTimeout(() => document.getElementById('btn-restart').style.display = 'inline-block', 8000);
+            soundEngine.playChime();
+        },
+
+        showSaved() { this.showRevelation(this.choiceId); },
+
+        spawnConfetti() {
+            for (let i = 0; i < 60; i++) {
+                const c = document.createElement('div');
+                c.className = 'confetti';
+                c.style.left = Math.random() * 100 + 'vw';
+                c.style.background = ['#ffb6c1', '#e0f7fa', '#ffd700', '#ff85a1'][Math.floor(Math.random()*4)];
+                c.style.transform = `rotate(${Math.random() * 360}deg)`;
+                c.style.animationDuration = (Math.random() * 2 + 2) + 's';
+                document.body.appendChild(c);
+                setTimeout(() => c.remove(), 4000);
+            }
+        },
+
+        initSnow() {
+            const container = document.getElementById('snow-container');
+            setInterval(() => {
+                const flake = document.createElement('div');
+                flake.className = 'snowflake';
+                flake.innerHTML = ['❄', '❅', '❆', '•'][Math.floor(Math.random()*4)];
+                flake.style.left = Math.random() * 100 + 'vw';
+                flake.style.opacity = Math.random();
+                flake.style.fontSize = Math.random() * 1.5 + 0.5 + 'rem';
+                flake.style.animationDuration = Math.random() * 5 + 5 + 's';
+                container.appendChild(flake);
+                setTimeout(() => flake.remove(), 10000);
+            }, 300);
+        }
+    };
+
+    window.onload = () => {
+        app.initSnow();
+        if (app.choiceId) app.navigate('locked');
+        else app.navigate('welcome');
+    };
+</script>
+</body>
+</html>
