@@ -2,353 +2,616 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Amrita's Winter Mystery ❄️</title>
-    <link href="https://fonts.googleapis.com/css2?family=Pacifico&family=Quicksand:wght@400;600;700&family=Playfair+Display:italic,wght@400;700&display=swap" rel="stylesheet">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>A Jar of Moments</title>
     <style>
-        :root {
-            --pink-light: #fff5f7;
-            --pink-main: #ffb6c1;
-            --pink-accent: #ff85a1;
-            --winter-blue: #e0f7fa;
-            --snow-white: #ffffff;
-            --magic-gold: #ffd700;
-        }
-
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        /* --- FONTS & RESET --- */
+        @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700&family=Quicksand:wght@300;400;600&display=swap');
 
         body, html {
-            margin: 0; padding: 0; width: 100%; height: 100%;
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: #0d0d1a;
             font-family: 'Quicksand', sans-serif;
-            background: linear-gradient(135deg, #fff5f7 0%, #ffebf0 50%, #e0f7fa 100%);
-            overflow: hidden; color: #5d5d5d;
+            -webkit-user-select: none;
+            user-select: none;
         }
 
-        /* --- Snowfall Layer --- */
-        #snow-container {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            pointer-events: none; z-index: 1;
-        }
-        .snowflake {
-            position: absolute; top: -10px; color: white;
-            opacity: 0.8; user-select: none; animation: fall linear forwards;
-            filter: drop-shadow(0 0 5px white);
-        }
-        @keyframes fall { to { transform: translateY(105vh) rotate(360deg); } }
-
-        /* --- App Wrapper --- */
-        .app-wrapper {
-            position: relative; z-index: 10;
-            display: flex; justify-content: center; align-items: center;
-            height: 100vh; width: 100%; padding: 20px;
+        /* --- 3D CANVAS & BACKGROUND --- */
+        #canvas-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+            /* Gradient darkens slightly at bottom for the jar */
+            background: linear-gradient(180deg, #1a1a2e 0%, #24243e 60%, #151525 100%);
+            transition: filter 3s ease;
         }
 
-        .screen {
-            background: rgba(255, 255, 255, 0.4);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border: 2px solid var(--snow-white);
-            border-radius: 40px; padding: 2.5rem;
-            text-align: center; width: 100%; max-width: 600px;
-            display: none; box-shadow: 0 20px 60px rgba(255, 182, 193, 0.2);
-            max-height: 90vh; overflow-y: auto;
+        /* --- UI LAYER --- */
+        #ui-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 10;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
         }
-        .active { display: block; animation: screenPop 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
-        @keyframes screenPop { from { opacity: 0; transform: scale(0.9) translateY(30px); } to { opacity: 1; transform: scale(1) translateY(0); } }
 
-        /* --- Elements --- */
-        h1 { font-family: 'Pacifico', cursive; color: var(--pink-accent); font-size: 2.5rem; margin-top: 0; text-shadow: 2px 2px 0 white; }
-        p { font-size: 1.1rem; line-height: 1.6; color: #6a6a6a; }
-
-        .btn {
-            background: var(--pink-accent); color: white; border: none;
-            padding: 15px 45px; border-radius: 50px; font-size: 1.3rem;
-            font-family: 'Pacifico', cursive; cursor: pointer; transition: 0.4s;
-            box-shadow: 0 10px 20px rgba(255, 133, 161, 0.3);
-            margin-top: 20px; position: relative; overflow: hidden;
+        .msg-box {
+            position: absolute;
+            width: 85%;
+            opacity: 0;
+            transform: translateY(15px);
+            transition: opacity 2s ease, transform 2s ease;
+            color: #e3f2fd;
+            font-size: 1.5rem;
+            line-height: 1.6;
+            font-weight: 600;
+            text-shadow: 0 0 15px rgba(174, 198, 207, 0.4);
         }
-        .btn:hover { transform: translateY(-3px); background: #ff6b8e; box-shadow: 0 15px 30px rgba(255, 133, 161, 0.4); }
 
-        /* --- Game Grid --- */
-        .hud { display: flex; justify-content: space-between; margin-bottom: 20px; font-weight: 700; color: var(--pink-accent); }
-        .grid {
-            display: grid; grid-template-columns: repeat(4, 1fr);
-            gap: 12px; margin: 20px 0;
+        .msg-box.visible {
+            opacity: 1;
+            transform: translateY(0);
         }
-        @media (max-width: 480px) { .grid { grid-template-columns: repeat(3, 1fr); } }
 
-        .card { height: 100px; perspective: 1000px; cursor: pointer; animation: cardFloat 3s infinite alternate ease-in-out; }
-        @keyframes cardFloat { from { transform: translateY(0); } to { transform: translateY(-8px); } }
-
-        .card-inner {
-            position: relative; width: 100%; height: 100%;
-            transition: transform 0.8s cubic-bezier(0.4, 0, 0.2, 1);
-            transform-style: preserve-3d;
+        .final-header {
+            font-family: 'Nunito', sans-serif;
+            font-size: 2.2rem;
+            font-weight: 700;
+            background: linear-gradient(to right, #ffb7b2, #aec6cf);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 15px;
         }
-        .card.flipped .card-inner { transform: rotateY(180deg); }
-        .card-face {
-            position: absolute; width: 100%; height: 100%;
-            backface-visibility: hidden; display: flex;
-            align-items: center; justify-content: center;
-            border-radius: 18px; font-size: 1.8rem; border: 3px solid white;
-        }
-        .card-front { background: var(--pink-main); color: white; box-shadow: inset 0 0 15px rgba(255,255,255,0.5); }
-        .card-back { background: var(--winter-blue); transform: rotateY(180deg); color: var(--pink-accent); }
 
-        /* --- Message Choices --- */
-        .choice-card {
-            background: white; border: 2px solid var(--pink-main);
-            padding: 20px; border-radius: 25px; cursor: pointer;
-            transition: 0.4s; margin-bottom: 15px; text-align: left;
+        .jar-text {
+            position: absolute;
+            bottom: 15%; /* Positioned below the jar */
+            font-size: 1.1rem;
+            color: #dbeaff;
+            opacity: 0;
+            font-weight: 300;
+            letter-spacing: 1px;
+            transition: opacity 3s ease;
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
         }
-        .choice-card:hover { transform: scale(1.02); background: var(--pink-light); border-color: var(--pink-accent); }
-        .choice-card h3 { margin: 0; font-family: 'Playfair Display', serif; color: var(--pink-accent); }
-        .choice-card p { margin: 5px 0 0; font-size: 0.9rem; }
 
-        /* --- Reveal Text --- */
-        .message-box { text-align: left; line-height: 1.9; font-size: 1.2rem; font-family: 'Playfair Display', serif; }
-        .stanza { opacity: 0; transform: translateY(20px); transition: 1.5s ease; margin-bottom: 25px; }
-        .stanza.visible { opacity: 1; transform: translateY(0); }
-        .highlight { color: var(--pink-accent); font-weight: 700; font-style: italic; }
-
-        /* --- Effects --- */
-        .confetti {
-            position: fixed; width: 10px; height: 10px; z-index: 1000;
-            animation: confettiFall 3s ease-out forwards; pointer-events: none;
+        .signature {
+            position: absolute;
+            bottom: 40px;
+            font-size: 0.9rem;
+            color: #aec6cf;
+            font-weight: 600;
+            letter-spacing: 1px;
+            opacity: 0;
+            transition: opacity 3s ease;
         }
-        @keyframes confettiFall {
-            0% { transform: translateY(0) rotate(0); opacity: 1; }
-            100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+
+        /* --- START OVERLAY --- */
+        #start-screen {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(13, 13, 26, 0.95);
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            transition: opacity 1s ease;
+        }
+
+        .tap-icon {
+            font-size: 3rem;
+            margin-bottom: 20px;
+            animation: float 2s infinite ease-in-out;
+        }
+
+        .tap-text {
+            color: #fff;
+            font-size: 1.1rem;
+            letter-spacing: 2px;
+            opacity: 0.8;
+            font-weight: 300;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
         }
     </style>
 </head>
 <body>
 
-<div id="snow-container"></div>
-
-<div class="app-wrapper">
-    <!-- Screen 1: Welcome -->
-    <div id="screen-welcome" class="screen">
-        <h1>Hi Amrita! 🌸</h1>
-        <p>A magical Secret Santa path has been prepared for you. Somewhere among the frost lies a path to your gift.</p>
-        <p style="font-family: 'Playfair Display', serif; font-style: italic;">"In the silence of the frost, trust your heart."</p>
-        <button class="btn" onclick="soundEngine.init(); app.start()">Enter the Magic ✨</button>
+    <div id="start-screen" onclick="startExperience()">
+        <div class="tap-icon">✨</div>
+        <div class="tap-text">Tap to Open</div>
     </div>
 
-    <!-- Screen 2: Game -->
-    <div id="screen-game" class="screen">
-        <div class="hud">
-            <span>Amrita's Journey</span>
-            <span>Chances: <span id="chance-val">10</span>/10</span>
+    <div id="canvas-container"></div>
+
+    <div id="ui-layer">
+        <!-- Story Phases -->
+        <div id="txt1" class="msg-box">A brand new year is here ✨</div>
+        <div id="txt2" class="msg-box">Wishing you a year filled with<br>happiness, good health,<br>and moments that truly matter.</div>
+        <div id="txt3" class="msg-box">Hope this year you create<br>many bright memories<br>that stay with you forever.</div>
+        <div id="txt4a" class="msg-box">May every day bring you<br>confidence, peace,<br>and reasons to smile.</div>
+        <div id="txt4b" class="msg-box">Some journeys feel better<br>when they begin with<br>familiar faces and calm mornings.</div>
+        <div id="txt5" class="msg-box">
+            <div class="final-header">Happy New Year 🌸</div>
+            May this year be kind to you.
         </div>
-        <div id="feedback" style="height: 25px; color: var(--pink-accent); font-style: italic; margin-bottom: 10px;">Pick a card...</div>
-        <div class="grid" id="card-grid"></div>
+
+        <!-- Post-Ending Jar Text -->
+        <div id="txt-jar" class="jar-text">For all the bright moments<br>waiting to happen.</div>
     </div>
 
-    <!-- Screen 3: Choices -->
-    <div id="screen-choices" class="screen">
-        <h1>The Path is Open ❄️</h1>
-        <p>You have found the light. Choose <b>one</b> mystical scroll to reveal your Secret Santa message:</p>
-        <div id="choice-list">
-            <div class="choice-card" onclick="app.selectMessage(1)"><h3>A Gentle Winter Poem</h3><p>Soft stanzas for a quiet, beautiful soul.</p></div>
-            <div class="choice-card" onclick="app.selectMessage(2)"><h3>What I See in You</h3><p>A sincere reflection of your inner radiance.</p></div>
-            <div class="choice-card" onclick="app.selectMessage(3)"><h3>About Your Creator</h3><p>A humble word from the friend behind the code.</p></div>
-            <div class="choice-card" onclick="app.selectMessage(4)"><h3>A Glimpse of 2026</h3><p>A starlit, mystical vision of your future year.</p></div>
-        </div>
-    </div>
+    <div id="sig" class="signature">— Joy 💙</div>
 
-    <!-- Screen 4: Revelation -->
-    <div id="screen-reveal" class="screen">
-        <div id="reveal-content" class="message-box"></div>
-        <button class="btn" id="btn-restart" style="display:none" onclick="location.reload()">Share the Joy 🌸</button>
-    </div>
+    <!-- LIBRARIES -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://unpkg.com/three@0.128.0/examples/js/postprocessing/EffectComposer.js"></script>
+    <script src="https://unpkg.com/three@0.128.0/examples/js/postprocessing/RenderPass.js"></script>
+    <script src="https://unpkg.com/three@0.128.0/examples/js/postprocessing/ShaderPass.js"></script>
+    <script src="https://unpkg.com/three@0.128.0/examples/js/shaders/CopyShader.js"></script>
+    <script src="https://unpkg.com/three@0.128.0/examples/js/shaders/LuminosityHighPassShader.js"></script>
+    <script src="https://unpkg.com/three@0.128.0/examples/js/postprocessing/UnrealBloomPass.js"></script>
 
-    <!-- Screen 5: Locked -->
-    <div id="screen-locked" class="screen">
-        <h1>A Gift Already Found</h1>
-        <p>Amrita, your Secret Santa mystery has already been unraveled. This magic is so special it can only happen once.</p>
-        <button class="btn" onclick="app.showSaved()">View My Message ❄️</button>
-    </div>
-</div>
-
-<script>
-    /* --- Synthesized Audio Engine --- */
-    const soundEngine = {
-        ctx: null,
-        init() {
-            if (this.ctx) return;
-            this.ctx = new (window.AudioContext || window.webkitAudioContext)();
-        },
-        playWhoosh() {
-            const osc = this.ctx.createOscillator();
-            const g = this.ctx.createGain();
-            osc.connect(g); g.connect(this.ctx.destination);
-            osc.type = 'triangle';
-            osc.frequency.setValueAtTime(100, this.ctx.currentTime);
-            osc.frequency.exponentialRampToValueAtTime(800, this.ctx.currentTime + 0.2);
-            g.gain.setValueAtTime(0.1, this.ctx.currentTime);
-            g.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.2);
-            osc.start(); osc.stop(this.ctx.currentTime + 0.2);
-        },
-        playChime() {
-            const notes = [523.25, 659.25, 783.99, 1046.50]; // C-E-G-C
-            notes.forEach((freq, i) => {
-                const osc = this.ctx.createOscillator();
-                const g = this.ctx.createGain();
-                osc.connect(g); g.connect(this.ctx.destination);
-                osc.type = 'sine'; osc.frequency.value = freq;
-                g.gain.setValueAtTime(0, this.ctx.currentTime);
-                g.gain.linearRampToValueAtTime(0.1, this.ctx.currentTime + i * 0.1 + 0.05);
-                g.gain.linearRampToValueAtTime(0, this.ctx.currentTime + i * 0.1 + 0.3);
-                osc.start(this.ctx.currentTime + i * 0.1);
-                osc.stop(this.ctx.currentTime + i * 0.1 + 0.4);
-            });
-        }
-    };
-
-    /* --- Application Logic --- */
-    const app = {
-        chances: 10,
-        gameWon: localStorage.getItem('santa_won_amrita') === 'true',
-        choiceId: localStorage.getItem('santa_choice_amrita'),
-        
-        messages: {
-            1: [
-                "Among the whispering <span class='highlight'>snowflakes</span> and the silent stars,",
-                "A hidden path revealed itself to you.",
-                "In the frost of winter's night, remember:",
-                "You are a spark, a <span class='highlight'>gentle mystery</span>,",
-                "A light that dances where hearts seek warmth."
-            ],
-            2: [
-                "What I see in you, <span class='highlight'>Amrita</span>, is the quiet strength of the winter sun.",
-                "You don't roar, yet you melt the deepest ice just by being present.",
-                "There is a clarity in your laughter and a warmth in your spirit.",
-                "You carry an <span class='highlight'>elegance</span> that doesn't demand attention,",
-                "Yet captures every heart that values true depth."
-            ],
-            3: [
-                "From Joy: I built this little world because you deserve wonder.",
-                "I wanted to create a moment where you felt <span class='highlight'>truly seen</span>.",
-                "This isn't just a game; it's a reflection of the effort you deserve.",
-                "I'm just a humble coder who believes you are <span class='highlight'>worth the magic</span>.",
-                "Merry Christmas, Amrita. 🌸"
-            ],
-            4: [
-                "The stars of <span class='highlight'>2026</span> align in a playful dance for you.",
-                "I see a year where your quietest ambitions finally find their voice.",
-                "You will realize that the cold winds of the past only made you stronger.",
-                "A year of <span class='highlight'>blooming in the snow</span> awaits you.",
-                "Trust the journey, for the horizon is <span class='highlight'>glowing just for you</span>. 🔮"
-            ]
-        },
-
-        start() {
-            if (this.gameWon) this.navigate('choices');
-            else this.navigate('game'), this.renderGrid();
-        },
-
-        navigate(id) {
-            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-            document.getElementById('screen-' + id).classList.add('active');
-        },
-
-        renderGrid() {
-            const grid = document.getElementById('card-grid');
-            grid.innerHTML = '';
-            for (let i = 0; i < 12; i++) {
-                const card = document.createElement('div');
-                card.className = 'card';
-                card.style.animationDelay = (i * 0.05) + 's';
-                card.innerHTML = `<div class="card-inner"><div class="card-face card-front">❄️</div><div class="card-face card-back">❌</div></div>`;
-                card.onclick = () => this.handlePick(card);
-                grid.appendChild(card);
-            }
-        },
-
-        handlePick(card) {
-            if (card.classList.contains('flipped') || this.chances <= 0) return;
-            soundEngine.playWhoosh();
-            card.classList.add('flipped');
-
-            // Fate Logic: Win on 10th chance
-            if (this.chances === 1) {
-                const back = card.querySelector('.card-back');
-                back.innerHTML = '✨'; back.style.background = "white";
-                document.getElementById('feedback').innerText = "Fate has found you! ✨";
-                soundEngine.playChime();
-                this.spawnConfetti();
-                localStorage.setItem('santa_won_amrita', 'true');
-                setTimeout(() => this.navigate('choices'), 2500);
-            } else {
-                this.chances--;
-                document.getElementById('chance-val').innerText = this.chances;
-                const feeds = ["Not this one ❄️", "Try again 🎁", "Santa giggles ✨", "Almost! 🌬️"];
-                document.getElementById('feedback').innerText = feeds[Math.floor(Math.random()*feeds.length)];
-                if (this.chances === 1) document.getElementById('feedback').innerText = "Santa whispers: It's very close! 🎅";
+    <script>
+        /* =========================================
+           AUDIO ENGINE (Procedural + Quiet Loop)
+           ========================================= */
+        const AudioEngine = {
+            ctx: null,
+            masterGain: null,
+            isQuietMode: false,
+            
+            init() {
+                const AC = window.AudioContext || window.webkitAudioContext;
+                this.ctx = new AC();
+                this.masterGain = this.ctx.createGain();
+                this.masterGain.gain.value = 0.35; 
+                this.masterGain.connect(this.ctx.destination);
                 
-                setTimeout(() => {
-                    this.renderGrid(); // Shuffle by re-render
-                }, 1000);
+                this.setupReverb();
+                this.startMelody();
+            },
+
+            setupReverb() {
+                const convolver = this.ctx.createConvolver();
+                const rate = this.ctx.sampleRate;
+                const length = rate * 3.0; 
+                const impulse = this.ctx.createBuffer(2, length, rate);
+                for(let i=0; i<length; i++) {
+                    const decay = Math.pow(1 - i/length, 2);
+                    impulse.getChannelData(0)[i] = (Math.random()*2-1)*decay;
+                    impulse.getChannelData(1)[i] = (Math.random()*2-1)*decay;
+                }
+                convolver.buffer = impulse;
+                convolver.connect(this.masterGain);
+                this.reverb = convolver;
+            },
+
+            playTone(freq, duration) {
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                
+                // Switch to sine (bell-like) for quiet mode
+                osc.type = this.isQuietMode ? 'sine' : 'sine'; 
+                osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+                
+                const t = this.ctx.currentTime;
+                gain.gain.setValueAtTime(0, t);
+                gain.gain.linearRampToValueAtTime(this.isQuietMode ? 0.1 : 0.2, t + 0.05);
+                gain.gain.exponentialRampToValueAtTime(0.001, t + duration);
+
+                osc.connect(gain);
+                gain.connect(this.reverb);
+                
+                osc.start();
+                osc.stop(t + duration);
+            },
+
+            startMelody() {
+                const notes = [523.25, 587.33, 659.25, 783.99, 880.00]; // C Major
+                const bellNotes = [1046.50, 1174.66, 1318.51, 1567.98]; // High octave
+                
+                const playNext = () => {
+                    let note, dur, wait;
+
+                    if (this.isQuietMode) {
+                        // Sparser, higher, softer (Music Box style)
+                        note = bellNotes[Math.floor(Math.random()*bellNotes.length)];
+                        dur = 4.0;
+                        wait = 3000 + Math.random() * 3000; // Slow loop
+                    } else {
+                        // Normal melody
+                        note = Math.random() > 0.8 ? bellNotes[0] : notes[Math.floor(Math.random()*notes.length)];
+                        dur = 2.0;
+                        wait = 1500 + Math.random() * 1500;
+                    }
+
+                    this.playTone(note, dur);
+                    setTimeout(playNext, wait);
+                };
+                playNext();
+            },
+
+            transitionToQuiet() {
+                // Smoothly lower volume
+                const t = this.ctx.currentTime;
+                this.masterGain.gain.cancelScheduledValues(t);
+                this.masterGain.gain.setValueAtTime(this.masterGain.gain.value, t);
+                this.masterGain.gain.linearRampToValueAtTime(0.15, t + 4); // Fade to very soft
+                this.isQuietMode = true;
             }
-        },
+        };
 
-        selectMessage(id) {
-            localStorage.setItem('santa_choice_amrita', id);
-            this.showRevelation(id);
-        },
+        /* =========================================
+           3D SCENE & ANIMATION
+           ========================================= */
+        const scene = new THREE.Scene();
+        scene.fog = new THREE.FogExp2(0x0d0d1a, 0.04); // Deep fog matches bg
 
-        showRevelation(id) {
-            this.navigate('reveal');
-            const container = document.getElementById('reveal-content');
-            container.innerHTML = `<h1>For Amrita</h1>`;
-            this.messages[id].forEach((line, i) => {
-                const div = document.createElement('div');
-                div.className = 'stanza';
-                div.innerHTML = line;
-                container.appendChild(div);
-                setTimeout(() => div.classList.add('visible'), i * 1500);
-            });
-            setTimeout(() => document.getElementById('btn-restart').style.display = 'inline-block', 8000);
-            soundEngine.playChime();
-        },
+        const camera = new THREE.PerspectiveCamera(65, window.innerWidth / window.innerHeight, 0.1, 100);
+        camera.position.set(0, 0, 14);
 
-        showSaved() { this.showRevelation(this.choiceId); },
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        document.getElementById('canvas-container').appendChild(renderer.domElement);
 
-        spawnConfetti() {
-            for (let i = 0; i < 60; i++) {
-                const c = document.createElement('div');
-                c.className = 'confetti';
-                c.style.left = Math.random() * 100 + 'vw';
-                c.style.background = ['#ffb6c1', '#e0f7fa', '#ffd700', '#ff85a1'][Math.floor(Math.random()*4)];
-                c.style.transform = `rotate(${Math.random() * 360}deg)`;
-                c.style.animationDuration = (Math.random() * 2 + 2) + 's';
-                document.body.appendChild(c);
-                setTimeout(() => c.remove(), 4000);
+        // Bloom Effect
+        const renderScene = new THREE.RenderPass(scene, camera);
+        const bloomPass = new THREE.UnrealBloomPass(
+            new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85
+        );
+        bloomPass.threshold = 0.1;
+        bloomPass.strength = 1.2;
+        bloomPass.radius = 0.8;
+        const composer = new THREE.EffectComposer(renderer);
+        composer.addPass(renderScene);
+        composer.addPass(bloomPass);
+
+        // --- ASSETS: BUTTERFLY ---
+        const wingShape = new THREE.Shape();
+        wingShape.moveTo(0,0);
+        wingShape.quadraticCurveTo(0.5, 0.8, 1.2, 0.8);
+        wingShape.quadraticCurveTo(1.4, 0.4, 0.8, 0);
+        wingShape.quadraticCurveTo(1.2, -0.6, 0.4, -1);
+        wingShape.lineTo(0,0);
+        const wingGeom = new THREE.ShapeGeometry(wingShape);
+
+        // --- ASSETS: JAR (Minimal Light Silhouette) ---
+        const jarGroup = new THREE.Group();
+        
+        // Jar Body (Lines)
+        const jarMat = new THREE.MeshBasicMaterial({ 
+            color: 0xffffff, transparent: true, opacity: 0.15, 
+            side: THREE.DoubleSide, blending: THREE.AdditiveBlending, wireframe: false
+        });
+        const jarCyl = new THREE.Mesh(new THREE.CylinderGeometry(2, 2, 5, 32, 1, true), jarMat);
+        
+        // Jar Rim
+        const rimGeo = new THREE.TorusGeometry(2, 0.05, 16, 60);
+        const rimMesh = new THREE.Mesh(rimGeo, new THREE.MeshBasicMaterial({ color: 0xffffff, opacity: 0.4, transparent: true }));
+        rimMesh.rotation.x = Math.PI/2;
+        rimMesh.position.y = 2.5;
+
+        // Jar Bottom Glow
+        const bottomGlow = new THREE.Mesh(
+            new THREE.CircleGeometry(2, 32),
+            new THREE.MeshBasicMaterial({ color: 0xffd1dc, opacity: 0.1, transparent: true, blending: THREE.AdditiveBlending })
+        );
+        bottomGlow.rotation.x = -Math.PI/2;
+        bottomGlow.position.y = -2.4;
+
+        jarGroup.add(jarCyl);
+        jarGroup.add(rimMesh);
+        jarGroup.add(bottomGlow);
+        jarGroup.position.set(0, -2, 0); // Center screen roughly
+        jarGroup.visible = false; // Hidden initially
+        jarGroup.scale.set(0,0,0); // Grow effect
+        scene.add(jarGroup);
+
+        // --- BUTTERFLY CLASS ---
+        class Butterfly {
+            constructor(color, isHero = false) {
+                this.group = new THREE.Group();
+                this.isHero = isHero;
+                this.color = color;
+                
+                const mat = new THREE.MeshBasicMaterial({
+                    color: color, side: THREE.DoubleSide, transparent: true, opacity: 0.85
+                });
+                this.lWing = new THREE.Mesh(wingGeom, mat);
+                this.lWing.scale.set(-0.35, 0.35, 0.35);
+                this.rWing = new THREE.Mesh(wingGeom, mat);
+                this.rWing.scale.set(0.35, 0.35, 0.35);
+
+                this.group.add(this.lWing);
+                this.group.add(this.rWing);
+                scene.add(this.group);
+
+                this.reset();
+                this.timer = Math.random() * 10;
+                this.flapSpeed = 0.15 + Math.random() * 0.1;
+                this.insideJar = false;
             }
-        },
 
-        initSnow() {
-            const container = document.getElementById('snow-container');
-            setInterval(() => {
-                const flake = document.createElement('div');
-                flake.className = 'snowflake';
-                flake.innerHTML = ['❄', '❅', '❆', '•'][Math.floor(Math.random()*4)];
-                flake.style.left = Math.random() * 100 + 'vw';
-                flake.style.opacity = Math.random();
-                flake.style.fontSize = Math.random() * 1.5 + 0.5 + 'rem';
-                flake.style.animationDuration = Math.random() * 5 + 5 + 's';
-                container.appendChild(flake);
-                setTimeout(() => flake.remove(), 10000);
-            }, 300);
+            reset() {
+                if(this.isHero) {
+                    this.group.position.set(0, -20, 0);
+                    this.group.visible = false;
+                } else {
+                    // Start outside
+                    this.group.position.set(
+                        (Math.random()-0.5) * 15,
+                        (Math.random()-0.5) * 25,
+                        (Math.random()-0.5) * 10
+                    );
+                    this.speedY = 0.015 + Math.random() * 0.02;
+                    this.swaySpeed = 0.5 + Math.random();
+                }
+                this.insideJar = false;
+            }
+
+            update(time, phase) {
+                // Flapping
+                this.timer += this.flapSpeed;
+                const flap = Math.sin(this.timer) * 0.7;
+                this.lWing.rotation.y = flap;
+                this.rWing.rotation.y = -flap;
+
+                if (phase === 6) {
+                    this.updateJarBehavior(time);
+                } else {
+                    this.updateNormalBehavior(time, phase);
+                }
+            }
+
+            updateNormalBehavior(time, phase) {
+                if (this.isHero) {
+                    if (this.group.visible && phase >= 5) { 
+                        // Hero flying up in phase 5
+                        // (Handled in main loop for specific path)
+                    }
+                } else {
+                    this.group.position.y += this.speedY;
+                    this.group.position.x += Math.sin(time + this.swaySpeed) * 0.01;
+                    if (this.group.position.y > 15) {
+                        this.group.position.y = -15;
+                        this.group.position.x = (Math.random()-0.5)*12;
+                    }
+                    if (phase === 3 && Math.random() > 0.96) createSparkle(this.group.position, false);
+                }
+            }
+
+            updateJarBehavior(time) {
+                // Target: Jar Center (0, -2, 0)
+                const tx = 0, ty = -1, tz = 0;
+                
+                // Distance to jar center
+                const d = this.group.position.distanceTo(new THREE.Vector3(tx, ty, tz));
+
+                if (d < 1.8) {
+                    this.insideJar = true;
+                }
+
+                if (this.insideJar) {
+                    // Float softly inside
+                    this.group.position.x += Math.sin(time * 2 + this.swaySpeed) * 0.005;
+                    this.group.position.y += Math.cos(time * 1.5) * 0.005;
+                    // Keep within bounds
+                    if (this.group.position.y < -3.5) this.group.position.y = -3.5;
+                    if (this.group.position.y > 0.5) this.group.position.y = 0.5;
+                    // Make them glow/sparkle occasionally
+                    if(Math.random() > 0.98) createSparkle(this.group.position, true);
+                } else {
+                    // Gentle steer towards jar
+                    this.group.position.x += (tx - this.group.position.x) * 0.01;
+                    this.group.position.y += (ty - this.group.position.y) * 0.01;
+                    this.group.position.z += (tz - this.group.position.z) * 0.01;
+                }
+            }
         }
-    };
 
-    window.onload = () => {
-        app.initSnow();
-        if (app.choiceId) app.navigate('locked');
-        else app.navigate('welcome');
-    };
-</script>
+        // --- SPARKLES ---
+        const sparkles = [];
+        const sparkleGeom = new THREE.PlaneGeometry(0.1, 0.1);
+        const sparkleMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 1 });
+
+        function createSparkle(pos, isJarDust) {
+            const mesh = new THREE.Mesh(sparkleGeom, sparkleMat.clone());
+            mesh.position.copy(pos);
+            if(isJarDust) {
+                mesh.material.color.setHex(0xffd1dc); // Pastel pink dust
+                mesh.scale.set(0.5, 0.5, 0.5);
+            }
+            scene.add(mesh);
+            sparkles.push({ mesh: mesh, life: 1.0, isDust: isJarDust });
+        }
+
+        // --- INSTANTIATION ---
+        const butterflies = [];
+        for(let i=0; i<25; i++) {
+            butterflies.push(new Butterfly(Math.random()>0.5 ? 0xffb7b2 : 0xaec6cf));
+        }
+        const heroPink = new Butterfly(0xffb7b2, true);
+        const heroBlue = new Butterfly(0xaec6cf, true);
+
+        // --- ANIMATION ---
+        let time = 0;
+        let phase = 0;
+        let heroStartTime = 0;
+
+        function animate() {
+            requestAnimationFrame(animate);
+            time += 0.015;
+
+            // Phase 6 Jar Animation
+            if (phase === 6) {
+                // Grow Jar
+                if (jarGroup.scale.x < 1) {
+                    jarGroup.scale.addScalar(0.01);
+                    jarGroup.rotation.y += 0.01; // Gentle spin while appearing
+                } else {
+                    jarGroup.rotation.y = Math.sin(time * 0.2) * 0.1; // Idle gentle rock
+                }
+                
+                // Jar internal glow pulse
+                jarMat.opacity = 0.15 + Math.sin(time)*0.05;
+            }
+
+            // Update Butterflies
+            butterflies.forEach(b => b.update(time, phase));
+
+            // Heroes (Phases 4 & 5)
+            if (phase >= 4 && phase < 6) {
+                heroPink.group.visible = true;
+                heroBlue.group.visible = true;
+                heroPink.update(time, phase);
+                heroBlue.update(time, phase);
+                
+                const t = time - heroStartTime;
+                if (phase === 5) {
+                    // Finale fly away
+                    const circleT = t - 8;
+                    if(circleT > 4) {
+                        const flyY = (circleT - 4) * 0.8;
+                        heroPink.group.position.y = flyY;
+                        heroBlue.group.position.y = flyY;
+                        heroPink.group.position.x = -0.8 + Math.sin(time)*0.5;
+                        heroBlue.group.position.x = 0.8 + Math.sin(time+1)*0.5;
+                    }
+                }
+            } else if (phase === 6) {
+                // Hide heroes after they flew away, let regular ones fill the jar
+                heroPink.group.visible = false;
+                heroBlue.group.visible = false;
+            }
+
+            // Update Sparkles
+            for(let i=sparkles.length-1; i>=0; i--) {
+                const s = sparkles[i];
+                s.life -= 0.01;
+                s.mesh.rotation.z += 0.1;
+                s.mesh.material.opacity = s.life;
+                
+                if (s.isDust) {
+                    // Dust stays inside/floats slowly
+                    s.mesh.position.y += 0.005;
+                    s.life -= 0.005; // Last longer
+                } else {
+                    s.mesh.position.y += 0.015;
+                }
+                
+                if(s.life <= 0) {
+                    scene.remove(s.mesh);
+                    sparkles.splice(i,1);
+                }
+            }
+
+            composer.render();
+        }
+        animate();
+
+        // --- TIMELINE ---
+        const ui = {
+            t1: document.getElementById('txt1'),
+            t2: document.getElementById('txt2'),
+            t3: document.getElementById('txt3'),
+            t4a: document.getElementById('txt4a'),
+            t4b: document.getElementById('txt4b'),
+            t5: document.getElementById('txt5'),
+            jarTxt: document.getElementById('txt-jar'),
+            sig: document.getElementById('sig')
+        };
+
+        function show(el, duration) {
+            return new Promise(r => {
+                el.classList.add('visible');
+                setTimeout(() => {
+                    el.classList.remove('visible');
+                    setTimeout(r, 2000);
+                }, duration);
+            });
+        }
+
+        async function runTimeline() {
+            phase = 1;
+            await new Promise(r => setTimeout(r, 1000));
+            await show(ui.t1, 3500); // Brand new year
+
+            phase = 2;
+            await show(ui.t2, 4500); // Wishes
+
+            phase = 3; 
+            await show(ui.t3, 4500); // Memories
+
+            phase = 4;
+            heroStartTime = time;
+            butterflies.forEach(b => b.lWing.material.opacity = 0.3); // Dim bg
+            await show(ui.t4a, 4000); // Confidence
+            await show(ui.t4b, 4500); // Familiar faces
+
+            phase = 5; // Fly away
+            ui.t5.classList.add('visible'); // Happy New Year
+            
+            // Wait for fly away
+            await new Promise(r => setTimeout(r, 4000));
+            
+            // TRANSITION TO JAR PHASE (Phase 6)
+            ui.t5.classList.remove('visible'); // Fade out happy new year
+            ui.sig.style.opacity = 1; // Show signature first
+            
+            await new Promise(r => setTimeout(r, 2000));
+            
+            // Start Phase 6
+            phase = 6;
+            AudioEngine.transitionToQuiet(); // Music Box Mode
+            jarGroup.visible = true; // Reveal Jar
+            
+            // Reset background butterflies to fly to jar
+            butterflies.forEach(b => {
+                b.reset(); 
+                b.lWing.material.opacity = 0.85; // Brighten them up again
+            });
+
+            await new Promise(r => setTimeout(r, 2000));
+            ui.jarTxt.style.opacity = 1; // Show "Bright moments"
+            
+            // Infinite loop state established
+        }
+
+        function startExperience() {
+            const overlay = document.getElementById('start-screen');
+            overlay.style.opacity = 0;
+            setTimeout(() => overlay.remove(), 1000);
+            AudioEngine.init();
+            runTimeline();
+        }
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            composer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+    </script>
 </body>
 </html>
